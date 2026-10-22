@@ -6,14 +6,31 @@ import jwt
 import datetime
 from functools import wraps
 import requests  # Added for communicating privately with your local Ollama engine
+import os
+from dotenv import load_dotenv
+
+# Folder this file lives in, so paths work no matter where you run python from
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY or SECRET_KEY == 'replace-me':
+    raise SystemExit(
+        "SECRET_KEY is not set. Copy backend/.env.example to backend/.env "
+        "and set SECRET_KEY to a long random value."
+    )
+
+DEBUG = os.getenv('FLASK_DEBUG', 'false').lower() in ('1', 'true', 'yes')
+CORS_ORIGIN = os.getenv('CORS_ORIGIN', 'http://localhost:3000')
+OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434/api/generate')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3')
+DB_PATH = os.path.join(BASE_DIR, 'finance.db')
 
 app = Flask(__name__)
-CORS(app)
-
-SECRET_KEY = "cyber_ultramarine_secret_key_change_in_production"
+CORS(app, origins=CORS_ORIGIN)
 
 def get_db_connection():
-    conn = sqlite3.connect('finance.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -203,16 +220,15 @@ Here is the user's authentic, live transaction data context for your analytical 
 """
 
     # 4. Package payload parameters for the local Ollama daemon service
-    ollama_url = "http://localhost:11434/api/generate"
     payload = {
-        "model": "llama3",
+        "model": OLLAMA_MODEL,
         "prompt": f"{system_prompt}\n\nUser Question: {user_message}\nFinGan Response:",
         "stream": False
     }
 
     try:
         # Send local loopback network request (100% off-grid)
-        response = requests.post(ollama_url, json=payload, timeout=60)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=60)
         response_json = response.json()
         return jsonify({"response": response_json.get("response", "FinGan engine failed to articulate structural output.")})
     except Exception as e:
@@ -220,4 +236,4 @@ Here is the user's authentic, live transaction data context for your analytical 
         return jsonify({"error": "FinGan core is optimizing or offline. Ensure Ollama service is active on localhost."}), 500
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(port=5000, debug=DEBUG)

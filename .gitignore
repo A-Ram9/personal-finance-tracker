@@ -1,0 +1,13 @@
+# Secrets
+.env
+
+# Local databases
+*.db
+
+# Python
+__pycache__/
+venv/
+
+# Node / React
+node_modules/
+build/
