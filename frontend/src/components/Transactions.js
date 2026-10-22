@@ -1,45 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import api from '../api';
+import React, { useState } from 'react';
 import TransactionForm from './TransactionForm';
 import { Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Card, Typography, Box, Select, MenuItem, IconButton } from '@mui/material';
 import { Delete as DeleteOutlineIcon, Edit as EditNoteIcon, FileDownload as FileDownloadIcon } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function Transactions({ onData, convertAmount, currencySymbol }) {
-  const [transactions, setTransactions] = useState([]);
+function Transactions({ transactions, onAdd, onUpdate, onDelete, convertAmount, currencySymbol }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   const [editData, setEditData] = useState(null);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [timeFilter, setTimeFilter] = useState('all');
 
 
-  const fetchTransactions = () => {
-    api.get('/transactions')
-      .then(res => {
-        setTransactions(res.data);
-        onData(res.data);
-      }).catch(err => console.log(err));
-  };
-
-  useEffect(() => { fetchTransactions(); }, []);
-
   const deleteTransaction = async (id) => {
-    await api.delete(`/transactions/${id}`);
-    fetchTransactions();
+    setDeleteError('');
+    try {
+      await onDelete(id);
+    } catch {
+      setDeleteError("Couldn't delete. Please try again.");
+    }
   };
 
   const openEdit = (transaction) => {
     setEditData(transaction);
+    setEditError('');
     setEditOpen(true);
   };
 
   const handleEditChange = (e) => { setEditData({ ...editData, [e.target.name]: e.target.value }); };
 
   const saveEdit = async () => {
-    await api.put(`/transactions/${editData.id}`, editData);
-    setEditOpen(false);
-    fetchTransactions();
+    setEditError('');
+    try {
+      await onUpdate(editData);
+      setEditOpen(false);
+    } catch {
+      // Leave the dialog open so their changes aren't lost.
+      setEditError("Couldn't save. Please try again.");
+    }
   };
 
   // Advanced Date Filtering Logic
@@ -93,7 +93,7 @@ function Transactions({ onData, convertAmount, currencySymbol }) {
         </Button>
       </Box>
       
-      <TransactionForm onAdd={fetchTransactions} />
+      <TransactionForm onAdd={onAdd} />
 
       {/* Control Filters Widget Layer */}
       <Box sx={{ display: 'flex', gap: 2, mt: 4, mb: 3, flexWrap: 'wrap' }}>
@@ -111,6 +111,8 @@ function Transactions({ onData, convertAmount, currencySymbol }) {
           <MenuItem value="month">This Month</MenuItem>
         </Select>
       </Box>
+
+      {deleteError && <Typography variant="caption" color="error" sx={{ display: 'block', mb: 2 }}>{deleteError}</Typography>}
 
       {/* Ledger Container with AnimatePresence Core */}
       <Box sx={{ maxHeight: '380px', overflowY: 'auto', pr: 1 }}>
@@ -156,6 +158,7 @@ function Transactions({ onData, convertAmount, currencySymbol }) {
           <TextField margin="dense" name="category" label="Category" value={editData?.category || ''} onChange={handleEditChange} fullWidth />
           <TextField margin="dense" name="amount" label="Amount (Base INR)" type="number" value={editData?.amount || ''} onChange={handleEditChange} fullWidth />
           <TextField margin="dense" name="type" label="Type (income/expense)" value={editData?.type || ''} onChange={handleEditChange} fullWidth />
+          {editError && <Typography variant="caption" color="error">{editError}</Typography>}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setEditOpen(false)} color="inherit">Cancel</Button>

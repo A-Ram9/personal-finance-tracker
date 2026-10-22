@@ -8,7 +8,10 @@ import DashboardSkeleton from './components/DashboardSkeleton';
 import IntelligencePanel from './components/IntelligencePanel'; // Intelligence engine successfully linked
 import FinGanPanel from './components/FinGanPanel'; // NEW: FinGan AI Layer Imported
 import Auth from './components/Auth';
-import { Container, Typography, Grid, Select, MenuItem, Box, IconButton } from '@mui/material';
+import useTransactions from './hooks/useTransactions';
+import { expensesByCategory } from './lib/summary';
+import { onUnauthorized } from './api';
+import { Container, Typography, Grid, Select, MenuItem, Box, IconButton, Alert } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -18,11 +21,12 @@ const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', NPR: '₨', OMR: 'ر.ع.' };
 
 function App({ toggleTheme, mode }) {
   const [user, setUser] = useState(localStorage.getItem('username') || null);
-  const [transactions, setTransactions] = useState([]);
-  const [chartData, setChartData] = useState([]);
-  const [currency, setCurrency] = useState('INR'); 
+  const [currency, setCurrency] = useState('INR');
   const [rates, setRates] = useState({ INR: 1, USD: 0.012, NPR: 1.60, OMR: 0.0046 });
-  const [loading, setLoading] = useState(true); 
+  // Hooks must run on every render, so this sits above the `if (!user)` return below.
+  const { transactions, loading, error, addTransaction, updateTransaction, deleteTransaction } = useTransactions(user);
+  // Derived, not stored: recalculated from `transactions` on every render.
+  const chartData = expensesByCategory(transactions);
 
   useEffect(() => {
     // Sync external currency indexes
@@ -31,23 +35,12 @@ function App({ toggleTheme, mode }) {
         if (res.data && res.data.rates) setRates(res.data.rates);
       })
       .catch(() => console.log("Using cached currency profiles."));
+  }, []);
 
-    // Microstate transition timer to let the glass skeleton shimmer breathe
-    if (user) {
-      const timer = setTimeout(() => setLoading(false), 950);
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
-
-  const handleData = (data) => {
-    setTransactions(data);
-    const grouped = {};
-    data.forEach(t => {
-      if (!grouped[t.category]) grouped[t.category] = 0;
-      grouped[t.category] += t.amount;
-    });
-    setChartData(Object.keys(grouped).map(cat => ({ name: cat, value: grouped[cat] })));
-  };
+  // If the backend rejects our token (expired), api.js calls this and we show the login screen.
+  useEffect(() => {
+    onUnauthorized(() => setUser(null));
+  }, []);
 
   const convertAmount = (amountInINR) => {
     return (amountInINR * (rates[currency] || 1)).toFixed(2);
@@ -56,7 +49,6 @@ function App({ toggleTheme, mode }) {
   const logout = () => {
     localStorage.clear();
     setUser(null);
-    setLoading(true); 
   };
 
   if (!user) return <Auth onAuthSuccess={(name) => setUser(name)} />;
@@ -110,12 +102,23 @@ function App({ toggleTheme, mode }) {
               </Box>
             </Box>
 
+            {error && (
+              <Alert severity="error" sx={{ mb: 4 }}>
+                Couldn't load your transactions. Is the backend running?
+              </Alert>
+            )}
+
             {/* Layout Architecture Grid Row Map */}
             <Grid container spacing={4}>
               
               {/* Row 1: Operations Input Core & Budget Threshold Slider */}
               <Grid item xs={12} md={7}>
-                <Transactions onData={handleData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+                <Transactions
+                  transactions={transactions}
+                  onAdd={addTransaction}
+                  onUpdate={updateTransaction}
+                  onDelete={deleteTransaction}
+                  convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
               </Grid>
               <Grid item xs={12} md={5}>
                 <BudgetWidget transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />

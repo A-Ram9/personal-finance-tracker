@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { Card, Typography, Box, Slider, LinearProgress, Stack } from '@mui/material';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import { summarise } from '../lib/summary';
 
 function BudgetWidget({ transactions, convertAmount, currencySymbol }) {
   const [budgetLimit, setBudgetLimit] = useState(50000); // Base Default limits inside INR
 
-  const totalExpenses = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const totalInflow = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+  const { income: totalInflow, expense: totalExpenses } = summarise(transactions);
 
   // Compute metric ratios safely
   const percentageUsed = Math.min((totalExpenses / budgetLimit) * 100, 100);

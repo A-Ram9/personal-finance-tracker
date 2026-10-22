@@ -12,14 +12,15 @@ step by step to make it distinctive AND to learn the concepts properly.
 - Backend: cd backend && python app.py  (port 5000)
 - Frontend: cd frontend && npm start     (port 3000)
 
-## How I want you to work (I am learning)
-- Before editing, explain the plan and the key concept in plain language, briefly.
-- Keep changes small and focused on the current step. Don't refactor unrelated code.
-- After editing, summarise what changed in each file and why, in 1–2 lines each.
-- In each step, pick one meaningful function or piece of logic and leave it as a
-  `TODO(me)` stub with hints instead of writing it. I will implement it.
+## How I want you to work
+- I'm focused on building the finished product; you write all the code.
+- For bigger changes, show a short plan first and wait for my approval.
+- Explain the key concept behind each change in 2–3 plain sentences,
+  as if teaching a beginner. Skip explanations for trivial edits.
+- After editing, summarise what changed in each file in one line.
+- Don't leave TODO(me) stubs; implement everything.
 - Don't add new dependencies without telling me why and asking first.
 - Use plain, human UI copy. No jargon like "capital vector" or "velocity matrix".
 
 ## Current step
-Step 0 — clean foundation (secrets, dependencies, gitignore, config).
+Step 1 — one source of truth: useTransactions hook, pure summary functions, real loading state

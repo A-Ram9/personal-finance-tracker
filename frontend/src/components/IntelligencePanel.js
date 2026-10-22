@@ -4,30 +4,17 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SpeedIcon from '@mui/icons-material/Speed';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { summarise, expensesByCategory } from '../lib/summary';
 
 function IntelligencePanel({ transactions, convertAmount, currencySymbol }) {
-  // 1. Separate calculation vectors
-  const inflows = transactions.filter(t => t.type === 'income');
+  // 1. Totals
   const outflows = transactions.filter(t => t.type === 'expense');
+  const { income: totalInflow, expense: totalOutflow } = summarise(transactions);
 
-  const totalInflow = inflows.reduce((sum, t) => sum + t.amount, 0);
-  const totalOutflow = outflows.reduce((sum, t) => sum + t.amount, 0);
-  const netSavings = totalInflow - totalOutflow;
-
-  // 2. Compute Top Expense Category
-  const categoryMap = {};
-  outflows.forEach(t => {
-    categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
-  });
-  
-  let topCategory = "None";
-  let maxExpense = 0;
-  Object.keys(categoryMap).forEach(cat => {
-    if (categoryMap[cat] > maxExpense) {
-      maxExpense = categoryMap[cat];
-      topCategory = cat;
-    }
-  });
+  // 2. Top expense category (expensesByCategory is sorted largest first)
+  const [top] = expensesByCategory(transactions);
+  const topCategory = top ? top.name : 'None';
+  const maxExpense = top ? top.value : 0;
 
   // 3. Algorithmic Health Grader Core
   const computeHealthScore = () => {
@@ -52,9 +39,7 @@ function IntelligencePanel({ transactions, convertAmount, currencySymbol }) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    const recentOutflow = outflows
-      .filter(t => new Date(t.date) >= sevenDaysAgo)
-      .reduce((sum, t) => sum + t.amount, 0);
+    const recentOutflow = summarise(outflows.filter(t => new Date(t.date) >= sevenDaysAgo)).expense;
 
     if (recentOutflow > (totalOutflow * 0.5) && outflows.length > 2) {
       return { status: 'Accelerating', rate: 'High', text: 'Recent outlays are heavy. Consider freezing non-essentials.', color: '#FFD700' };

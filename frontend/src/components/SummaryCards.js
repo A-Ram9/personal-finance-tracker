@@ -3,11 +3,10 @@ import { Card, CardContent, Typography, Grid, Box } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { summarise } from '../lib/summary';
 
 function SummaryCards({ transactions, convertAmount, currencySymbol }) {
-  const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-  const balance = income - expense;
+  const { income, expense, balance } = summarise(transactions);
 
   const cards = [
     { label: 'Total Inflow', value: income, color: '#4169E1', icon: <ArrowUpwardIcon /> },

@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import api from '../api';
-import { TextField, Button, Select, MenuItem, Box } from '@mui/material';
+import { TextField, Button, Select, MenuItem, Box, Typography } from '@mui/material';
 
 function TransactionForm({ onAdd }) {
   const [form, setForm] = useState({ date: '', category: '', amount: '', type: 'expense' });
+  const [saveError, setSaveError] = useState('');
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await api.post('/transactions', form);
-    onAdd();
-    setForm({ date: '', category: '', amount: '', type: 'expense' });
+    setSaveError('');
+    try {
+      await onAdd(form);
+      setForm({ date: '', category: '', amount: '', type: 'expense' });
+    } catch {
+      // Keep what they typed so they can try again.
+      setSaveError("Couldn't save. Please try again.");
+    }
   };
 
   return (
@@ -24,6 +29,7 @@ function TransactionForm({ onAdd }) {
         <MenuItem value="expense">Expense</MenuItem>
       </Select>
       <Button type="submit" variant="contained" color="primary" sx={{ px: 4 }}>Add Transaction</Button>
+      {saveError && <Typography variant="caption" color="error" sx={{ width: '100%' }}>{saveError}</Typography>}
     </Box>
   );
 }
