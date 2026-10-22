@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { TextField, Button, Select, MenuItem, Box } from '@mui/material';
 
-function TransactionForm({ onAdd, getHeaders }) {
+function TransactionForm({ onAdd }) {
   const [form, setForm] = useState({ date: '', category: '', amount: '', type: 'expense' });
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await axios.post('http://localhost:5000/transactions', form, getHeaders());
+    await api.post('/transactions', form);
     onAdd();
     setForm({ date: '', category: '', amount: '', type: 'expense' });
   };

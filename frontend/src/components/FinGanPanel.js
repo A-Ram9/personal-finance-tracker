@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, Typography, TextField, Button, Box, Stack, Paper, CircularProgress } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SendIcon from '@mui/icons-material/Send';
-import axios from 'axios';
+import api from '../api';
 
 function FinGanPanel() {
   const [messages, setMessages] = useState([
@@ -20,14 +20,7 @@ function FinGanPanel() {
     setLoading(true);
 
     try {
-      // Fetch token to satisfy the backend token security validation layer
-      const token = localStorage.getItem('token'); 
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const res = await axios.post('http://localhost:5000/api/fingan/chat', 
-        { message: input }, 
-        { headers }
-      );
+      const res = await api.post('/api/fingan/chat', { message: input });
 
       setMessages(prev => [...prev, { sender: 'fingan', text: res.data.response }]);
     } catch (err) {

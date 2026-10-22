@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import App from './App';
+import Auth from './components/Auth';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+test('shows the sign-in and register options', () => {
+  render(<Auth onAuthSuccess={() => {}} />);
+  expect(screen.getByText('Sign In')).toBeInTheDocument();
+  expect(screen.getByText('Register')).toBeInTheDocument();
 });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { Box, TextField, Button, Typography, Card, ToggleButtonGroup, ToggleButton, Fade } from '@mui/material';
 
 function Auth({ onAuthSuccess }) {
@@ -13,7 +13,7 @@ function Auth({ onAuthSuccess }) {
     setError('');
     const endpoint = isLogin ? 'login' : 'register';
     try {
-      const res = await axios.post(`http://localhost:5000/${endpoint}`, { username, password });
+      const res = await api.post(`/${endpoint}`, { username, password });
       if (isLogin) {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('username', res.data.username);

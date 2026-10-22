@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import TransactionForm from './TransactionForm';
 import { Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Card, Typography, Box, Select, MenuItem, IconButton } from '@mui/material';
 import { Delete as DeleteOutlineIcon, Edit as EditNoteIcon, FileDownload as FileDownloadIcon } from '@mui/icons-material';
@@ -13,10 +13,9 @@ function Transactions({ onData, convertAmount, currencySymbol }) {
   const [filterType, setFilterType] = useState('');
   const [timeFilter, setTimeFilter] = useState('all');
 
-  const getHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
   const fetchTransactions = () => {
-    axios.get('http://localhost:5000/transactions', getHeaders())
+    api.get('/transactions')
       .then(res => {
         setTransactions(res.data);
         onData(res.data);
@@ -26,7 +25,7 @@ function Transactions({ onData, convertAmount, currencySymbol }) {
   useEffect(() => { fetchTransactions(); }, []);
 
   const deleteTransaction = async (id) => {
-    await axios.delete(`http://localhost:5000/transactions/${id}`, getHeaders());
+    await api.delete(`/transactions/${id}`);
     fetchTransactions();
   };
 
@@ -38,7 +37,7 @@ function Transactions({ onData, convertAmount, currencySymbol }) {
   const handleEditChange = (e) => { setEditData({ ...editData, [e.target.name]: e.target.value }); };
 
   const saveEdit = async () => {
-    await axios.put(`http://localhost:5000/transactions/${editData.id}`, editData, getHeaders());
+    await api.put(`/transactions/${editData.id}`, editData);
     setEditOpen(false);
     fetchTransactions();
   };
@@ -94,7 +93,7 @@ function Transactions({ onData, convertAmount, currencySymbol }) {
         </Button>
       </Box>
       
-      <TransactionForm onAdd={fetchTransactions} getHeaders={getHeaders} />
+      <TransactionForm onAdd={fetchTransactions} />
 
       {/* Control Filters Widget Layer */}
       <Box sx={{ display: 'flex', gap: 2, mt: 4, mb: 3, flexWrap: 'wrap' }}>
