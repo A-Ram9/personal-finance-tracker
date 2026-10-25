@@ -8,6 +8,7 @@ import DashboardSkeleton from './components/DashboardSkeleton';
 import IntelligencePanel from './components/IntelligencePanel'; // Intelligence engine successfully linked
 import FinGanPanel from './components/FinGanPanel'; // NEW: FinGan AI Layer Imported
 import Auth from './components/Auth';
+import BrandIntro from './components/BrandIntro';
 import useTransactions from './hooks/useTransactions';
 import { expensesByCategory, inMonth, inPeriod, periodMonth, PERIODS } from './lib/summary';
 import { formatMoney } from './lib/money';
@@ -20,6 +21,16 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PERIOD_KEY = 'fintrack-period';
+const INTRO_KEY = 'fintrack-intro-seen';
+
+// sessionStorage lasts until the tab closes, so the intro plays once per browser session.
+function introSeen() {
+  try {
+    return sessionStorage.getItem(INTRO_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 // Menu label, and the phrase that finishes headings like "Spent this month".
 const PERIOD_TEXT = {
   'this-month': { label: 'This month', phrase: 'this month' },
@@ -42,6 +53,8 @@ function App({ toggleTheme, mode }) {
   const [currency, setCurrency] = useState('INR');
   const [rates, setRates] = useState({ INR: 1, USD: 0.012, NPR: 1.60, OMR: 0.0046 });
   const [period, setPeriod] = useState(loadPeriod);
+  // Decided once on load: only someone arriving logged out sees the intro, and only once per session.
+  const [showIntro, setShowIntro] = useState(() => !user && !introSeen());
   // Hooks must run on every render, so this sits above the `if (!user)` return below.
   const { transactions, loading, error, addTransaction, updateTransaction, deleteTransaction } = useTransactions(user);
   // Derived, not stored: recalculated from `transactions` on every render.
@@ -78,6 +91,15 @@ function App({ toggleTheme, mode }) {
     }
   };
 
+  const finishIntro = () => {
+    setShowIntro(false);
+    try {
+      sessionStorage.setItem(INTRO_KEY, '1');
+    } catch {
+      // Not saved; it may play again on reload, which is harmless.
+    }
+  };
+
   const logout = () => {
     // Only remove login data; clear() would also wipe the saved light/dark choice.
     localStorage.removeItem('token');
@@ -85,7 +107,17 @@ function App({ toggleTheme, mode }) {
     setUser(null);
   };
 
-  if (!user) return <Auth onAuthSuccess={(name) => setUser(name)} />;
+  if (!user) {
+    // The login page is already there underneath, so the intro fading out is the crossfade.
+    return (
+      <>
+        <Auth onAuthSuccess={(name) => setUser(name)} />
+        <AnimatePresence>
+          {showIntro && <BrandIntro key="intro" onDone={finishIntro} />}
+        </AnimatePresence>
+      </>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>

@@ -15,6 +15,8 @@ export const tokens = {
     // Solid cherry for contained buttons. Same in both modes, unlike `expense`, which is a text colour.
     primaryFill: '#C1121F',
     onPrimaryFill: '#FFF6E8',
+    // Pale sky for small highlights on cherry (the intro chest). Same in both modes.
+    skyHighlight: '#A9C6EA',
   },
   dark: {
     background: '#1A1214',
@@ -27,6 +29,7 @@ export const tokens = {
     softFill: '#2F5D8C',
     primaryFill: '#C1121F',
     onPrimaryFill: '#FFF6E8',
+    skyHighlight: '#A9C6EA',
   },
 };
 
@@ -82,6 +85,7 @@ export function buildTheme(mode) {
       expense: { main: t.expense, contrastText: onAccent },
       income: { main: t.income, contrastText: onAccent },
       primaryFill: { main: t.primaryFill, contrastText: t.onPrimaryFill },
+      skyHighlight: { main: t.skyHighlight },
       softFill: { main: t.softFill },
       border: { main: t.border },
       divider: t.border,
