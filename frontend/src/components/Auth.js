@@ -24,7 +24,8 @@ function useAutofillLabel() {
   };
 }
 
-function Auth({ onAuthSuccess }) {
+// cardRef lets the brand intro measure this card so its vault door can sit exactly on top.
+function Auth({ onAuthSuccess, cardRef }) {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -89,7 +90,7 @@ function Auth({ onAuthSuccess }) {
       </Box>
 
       <Fade in={true} timeout={1000}>
-        <Card sx={{
+        <Card ref={cardRef} sx={{
           p: 5, width: '100%', maxWidth: 420, zIndex: 2, textAlign: 'center'
         }}>
           <Typography variant="h4" sx={{ typography: 'wordmark', fontSize: '3.25rem', lineHeight: 1.2, color: 'primary.main', mb: 1 }}>

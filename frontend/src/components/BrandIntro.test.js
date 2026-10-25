@@ -50,12 +50,12 @@ test('with reduced motion it finishes on its own after a short pause', async () 
   expect(onDone).toHaveBeenCalledTimes(1);
 });
 
-test('never waits longer than 3 seconds', async () => {
+test('never waits longer than 3.5 seconds', async () => {
   jest.useFakeTimers();
   const onDone = jest.fn();
   renderIntro(onDone);
   await act(async () => {
-    jest.advanceTimersByTime(3050);
+    jest.advanceTimersByTime(3550);
   });
   expect(onDone).toHaveBeenCalledTimes(1);
 });

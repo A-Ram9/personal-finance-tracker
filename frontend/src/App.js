@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Transactions from './components/Transactions';
 import ExpenseChart from './components/ExpenseChart';
@@ -55,6 +55,8 @@ function App({ toggleTheme, mode }) {
   const [period, setPeriod] = useState(loadPeriod);
   // Decided once on load: only someone arriving logged out sees the intro, and only once per session.
   const [showIntro, setShowIntro] = useState(() => !user && !introSeen());
+  // The login card, so the intro's vault door can match its size and position.
+  const loginCardRef = useRef(null);
   // Hooks must run on every render, so this sits above the `if (!user)` return below.
   const { transactions, loading, error, addTransaction, updateTransaction, deleteTransaction } = useTransactions(user);
   // Derived, not stored: recalculated from `transactions` on every render.
@@ -111,9 +113,9 @@ function App({ toggleTheme, mode }) {
     // The login page is already there underneath, so the intro fading out is the crossfade.
     return (
       <>
-        <Auth onAuthSuccess={(name) => setUser(name)} />
+        <Auth onAuthSuccess={(name) => setUser(name)} cardRef={loginCardRef} />
         <AnimatePresence>
-          {showIntro && <BrandIntro key="intro" onDone={finishIntro} />}
+          {showIntro && <BrandIntro key="intro" onDone={finishIntro} targetRef={loginCardRef} />}
         </AnimatePresence>
       </>
     );

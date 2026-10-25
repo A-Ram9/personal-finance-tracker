@@ -1,39 +1,52 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
-import { useTheme, darken, alpha } from '@mui/material/styles';
-import { motion, useAnimate, useReducedMotion, stagger } from 'framer-motion';
+import { useTheme, darken } from '@mui/material/styles';
+import { motion, useAnimate, useReducedMotion } from 'framer-motion';
 
-// Each symbol's centre across the 240px stage.
-const SYMBOLS = [
-  { char: '₹', x: 84 },
-  { char: '$', x: 108 },
-  { char: '£', x: 132 },
-  { char: 'ر.ع.', x: 158 },
-];
-
-const LID_OPEN = -30; // degrees, pivoting on the lid's back (right) corner
-const LID_LIFTED = -40;
-const MAX_WAIT_MS = 3000; // never hold anyone here longer than this, even if fonts are slow
+// The door is drawn in a 200×200 box (centre 100,100) and scaled to its size on screen.
+const RIM_RADIUS = 98; // door units
+const BOLT_COUNT = 12;
+const BOLT_OUT = 80; // distance from the centre, in door units
+const BOLT_IN = 74;
+const DOOR_OPEN = -105; // degrees of rotateY; negative swings the free edge toward the viewer
+const IRIS_SCALE = 4;
+const MAX_WAIT_MS = 3500; // never hold anyone here longer than this, even if fonts are slow
 const REDUCED_MIN_MS = 400;
 
 const part = (name) => `[data-part="${name}"]`;
 
+// Offset by 15° so no bolt lines up with a spoke.
+const BOLTS = Array.from({ length: BOLT_COUNT }, (_, i) => {
+  const angle = ((i * 360) / BOLT_COUNT + 15) * (Math.PI / 180);
+  const at = (r) => ({ x: 100 + r * Math.cos(angle), y: 100 + r * Math.sin(angle) });
+  return { out: at(BOLT_OUT), in: at(BOLT_IN) };
+});
+
+// Each bolt slides straight toward the centre: one step per bolt, all starting together ('<').
+const boltSteps = BOLTS.map((bolt, i) => [
+  `[data-bolt="${i}"]`,
+  { cx: [bolt.out.x, bolt.in.x], cy: [bolt.out.y, bolt.in.y] },
+  { duration: 0.2, ease: 'easeInOut', at: i === 0 ? 2.1 : '<' },
+]);
+
 // The whole story as one timeline. Each step starts when the previous one ends,
-// unless `at` says otherwise: a number is seconds from the start, '-0.1' means 0.1s before the previous step ends.
+// unless `at` says otherwise: a number is seconds from the start, '<' means "with the previous step".
 const SEQUENCE = [
-  // 0.00–0.30s: chest fades in and rises slightly
-  [part('chest'), { opacity: [0, 1], y: [8, 0] }, { duration: 0.3, ease: 'easeOut' }],
-  // 0.15–0.74s: symbols drop in one after another, while the glow inside fills
-  [part('symbol'), { y: [-130, 0], opacity: [0, 1] }, { duration: 0.35, delay: stagger(0.08), ease: 'easeInOut', at: 0.15 }],
-  [part('glow'), { opacity: [0, 0.9] }, { duration: 0.6, at: 0.15 }],
-  // 0.75–0.93s: lid closes
-  [part('lid'), { rotate: [LID_OPEN, 0] }, { duration: 0.18, ease: 'easeOut' }],
-  // 0.93–1.25s: a gentle sway from the base as it settles
-  [part('chest'), { rotate: [0, -3, 2.5, -1.5, 0] }, { duration: 0.32, ease: 'easeInOut' }],
-  // 1.25–1.50s: lid lifts...
-  [part('lid'), { rotate: [0, LID_LIFTED] }, { duration: 0.25, ease: 'easeOut' }],
-  // ...and from 1.40s the symbols drift up and out
-  [part('symbol'), { y: -150, opacity: 0 }, { duration: 0.35, delay: stagger(0.03), ease: 'easeOut', at: '-0.1' }],
+  // 0.0–0.3s: the door fades in and settles
+  [part('settle'), { opacity: [0, 1], scale: [0.98, 1] }, { duration: 0.3, ease: 'easeOut' }],
+  // 0.3–1.9s: the wheel turns ~270°: a heavy slow-in, slow-out to 282°, then settles back to 270°
+  [part('wheel'), { rotate: [0, 282, 270] }, { duration: 1.6, times: [0, 0.86, 1], ease: [[0.65, 0, 0.35, 1], 'easeOut'], at: 0.3 }],
+  // 1.9–2.1s: a short pause, then 2.1–2.3s: the bolts retract
+  ...boltSteps,
+  // 2.3s: remove the plug behind the door; the closed door still hides the doorway at this instant
+  [part('plug'), { opacity: 0 }, { duration: 0.01, at: 2.3 }],
+  // 2.3–3.0s: the door swings open on its left edge, easing out...
+  [part('door'), { rotateY: [0, DOOR_OPEN] }, { duration: 0.7, ease: 'easeOut', at: 2.3 }],
+  // ...and is gone just before it turns edge-on (with this easing, 90° comes about 68% of the way through)
+  [part('door'), { opacity: [1, 1, 0] }, { duration: 0.7, times: [0, 0.35, 0.6], ease: 'linear', at: 2.3 }],
+  // 2.45–3.0s: iris out, starting while the door is still swinging so the ring never sits empty around the card.
+  // The wall and its doorway grow from the doorway's centre and fade, passing the screen edges.
+  [part('wall'), { scale: [1, IRIS_SCALE], opacity: [1, 0] }, { duration: 0.55, ease: 'easeIn', at: 2.45 }],
 ];
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -47,10 +60,44 @@ function fontsReady() {
   }
 }
 
-function BrandIntro({ onDone }) {
+// The login card's size and position plus the window size, kept up to date as either changes.
+// Before the first measurement, a centred guess.
+function useLayout(targetRef) {
+  const [layout, setLayout] = useState(() => {
+    const width = Math.min(420, window.innerWidth);
+    const height = 520;
+    return {
+      top: (window.innerHeight - height) / 2, left: (window.innerWidth - width) / 2, width, height,
+      vw: window.innerWidth, vh: window.innerHeight,
+    };
+  });
+
+  useLayoutEffect(() => {
+    const el = targetRef?.current;
+    if (!el) return undefined;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      if (!r.width) return; // not laid out (e.g. in tests): keep the guess
+      setLayout({ top: r.top, left: r.left, width: r.width, height: r.height, vw: window.innerWidth, vh: window.innerHeight });
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [targetRef]);
+
+  return layout;
+}
+
+function BrandIntro({ onDone, targetRef }) {
   const theme = useTheme();
   const reduceMotion = useReducedMotion();
   const [scope, animate] = useAnimate();
+  const layout = useLayout(targetRef);
   // Keep the latest onDone without restarting the effect when App re-renders.
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
@@ -66,7 +113,7 @@ function BrandIntro({ onDone }) {
       onDoneRef.current();
     };
 
-    // Reduced motion: no drop, sway or lid; just wait briefly for fonts, then App fades us out.
+    // Reduced motion: the door stays closed and still; wait briefly for fonts, then App fades us out.
     const played = reduceMotion ? wait(REDUCED_MIN_MS) : (controls = animate(SEQUENCE));
     Promise.race([Promise.all([played, fontsReady()]), wait(MAX_WAIT_MS)]).then(finish);
 
@@ -82,14 +129,19 @@ function BrandIntro({ onDone }) {
   }, [animate, reduceMotion]);
 
   const fill = theme.palette.primaryFill.main;
-  const band = theme.palette.primaryFill.contrastText;
+  const cream = theme.palette.primaryFill.contrastText;
   const sky = theme.palette.skyHighlight.main;
-  const inside = darken(fill, 0.45);
+  const innerRing = darken(fill, 0.25);
 
-  // Starting poses, so the first frame matches the timeline before it starts.
-  const start = reduceMotion
-    ? { chest: 1, symbol: 0, lid: 0, glow: 0.9 }
-    : { chest: 0, symbol: 0, lid: LID_OPEN, glow: 0 };
+  // Centred on the login card, about 80vmin across, and always big enough that its rim clears the card's corners.
+  const cx = layout.left + layout.width / 2;
+  const cy = layout.top + layout.height / 2;
+  const cardCorner = Math.hypot(layout.width / 2, layout.height / 2);
+  const doorSize = Math.max(0.8 * Math.min(layout.vw, layout.vh), (2 * (cardCorner + 16)) / (RIM_RADIUS / 100));
+  const doorwayRadius = (doorSize * RIM_RADIUS) / 200 - 1; // just inside the rim, so the closed door covers it completely
+  const frameWidth = doorSize * 0.015;
+  const circle = (size) => ({ position: 'absolute', left: cx - size / 2, top: cy - size / 2, width: size, height: size, borderRadius: '50%' });
+  const doorwayMask = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${doorwayRadius}px, black ${doorwayRadius + 1}px)`;
 
   return (
     <Box
@@ -98,63 +150,52 @@ function BrandIntro({ onDone }) {
       initial={false}
       exit={{ opacity: 0 }}
       transition={{ duration: reduceMotion ? 0.2 : 0.3, ease: 'easeOut' }}
-      sx={{
-        position: 'fixed', inset: 0, zIndex: (t) => t.zIndex.modal + 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: 'background.default', cursor: 'pointer',
-      }}
+      sx={{ position: 'fixed', inset: 0, zIndex: (t) => t.zIndex.modal + 1, cursor: 'pointer', overflow: 'hidden' }}
     >
-      <Box ref={scope} sx={{ position: 'relative', width: 240, height: 240 }}>
-        {/* Everything that sways. Pivot at the chest's base (y = 200 of 240). */}
-        <Box data-part="chest" style={{ opacity: start.chest, transformOrigin: '50% 83.3%' }} sx={{ position: 'absolute', inset: 0 }}>
-          {/* Soft shadow on the floor */}
-          <svg width="240" height="240" style={{ position: 'absolute', inset: 0 }}>
-            <ellipse cx="120" cy="206" rx="78" ry="7" fill={alpha(theme.palette.text.primary, 0.08)} />
-          </svg>
+      <Box ref={scope} sx={{ position: 'absolute', inset: 0 }}>
+        {/* The wall with its round doorway and frame. It grows from the doorway's centre for the iris out. */}
+        <Box data-part="wall" style={{ transformOrigin: `${cx}px ${cy}px` }} sx={{ position: 'absolute', inset: 0 }}>
+          <Box sx={{ position: 'absolute', inset: 0, backgroundColor: 'background.default', maskImage: doorwayMask, WebkitMaskImage: doorwayMask }} />
+          <Box sx={{ ...circle(2 * doorwayRadius), border: `${frameWidth}px solid`, borderColor: 'border.main', boxSizing: 'content-box', marginLeft: `${-frameWidth}px`, marginTop: `${-frameWidth}px` }} />
+        </Box>
+        {/* Plug: fills the doorway until the door starts to open, so the login can't show through early. */}
+        <Box data-part="plug" sx={{ ...circle(doorSize), backgroundColor: 'background.default' }} />
 
-          {/* Inside of the chest, with the sky glow that brightens as it fills */}
-          <Box sx={{ position: 'absolute', left: 56, top: 106, width: 128, height: 22, borderRadius: '6px', backgroundColor: inside, overflow: 'hidden' }}>
-            <Box data-part="glow" style={{ opacity: start.glow }} sx={{ position: 'absolute', inset: '4px 8px', borderRadius: '50%', backgroundColor: sky, filter: 'blur(6px)' }} />
-          </Box>
-
-          {/* Lid: drawn behind the falling symbols, as an open lid stands at the back. Hinge at bottom right. */}
-          <Box data-part="lid" style={{ transform: `rotate(${start.lid}deg)`, transformOrigin: '100% 100%' }} sx={{ position: 'absolute', left: 48, top: 74, width: 144, height: 46 }}>
-            <svg width="144" height="46" viewBox="0 0 144 46">
-              <path d="M0 46 V24 Q0 0 24 0 H120 Q144 0 144 24 V46 Z" fill={fill} />
-              <rect x="30" y="0" width="8" height="46" fill={band} />
-              <rect x="106" y="0" width="8" height="46" fill={band} />
-              <rect x="0" y="34" width="144" height="7" fill={band} />
-              <path d="M14 10 Q20 4 34 4 H96" stroke={sky} strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.8" />
+        {/* Fades in and settles around its centre. Its `perspective` gives the door inside depth:
+            the free edge grows as it swings out toward you. */}
+        <Box data-part="settle" style={{ opacity: reduceMotion ? 1 : 0 }} sx={{ ...circle(doorSize), borderRadius: 0, perspective: `${doorSize * 2}px` }}>
+          <Box
+            data-part="door"
+            style={{ transformOrigin: 'left center' }}
+            sx={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden' }}
+          >
+            <svg width="100%" height="100%" viewBox="0 0 200 200" style={{ position: 'absolute', inset: 0 }}>
+              <circle cx="100" cy="100" r={RIM_RADIUS} fill={cream} />
+              <circle cx="100" cy="100" r="90" fill={fill} />
+              <circle cx="100" cy="100" r="62" fill="none" stroke={innerRing} strokeWidth="2" />
+              {BOLTS.map((bolt, i) => (
+                <circle key={i} data-bolt={i} cx={bolt.out.x} cy={bolt.out.y} r="4.5" fill={cream} />
+              ))}
             </svg>
-          </Box>
 
-          {/* Symbols. Resting at y 124+, they sit hidden behind the front of the chest. */}
-          {SYMBOLS.map(({ char, x }) => (
-            <Box
-              key={char}
-              component="span"
-              data-part="symbol"
-              style={{ opacity: start.symbol }}
-              sx={{
-                position: 'absolute', left: x - 20, top: 124, width: 40, textAlign: 'center',
-                fontSize: 22, lineHeight: 1, fontWeight: 700, color: 'softFill.main', whiteSpace: 'nowrap',
-              }}
-            >
-              {char}
+            {/* Ship's-wheel handle: its own box so it turns around its own centre. */}
+            <Box data-part="wheel" sx={{ position: 'absolute', left: '27%', top: '27%', width: '46%', height: '46%' }}>
+              <svg width="100%" height="100%" viewBox="0 0 100 100">
+                {[0, 60, 120, 180, 240, 300].map((deg) => (
+                  <g key={deg} transform={`rotate(${deg} 50 50)`}>
+                    <line x1="50" y1="50" x2="94" y2="50" stroke={cream} strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="94" cy="50" r="6" fill={cream} />
+                  </g>
+                ))}
+                <circle cx="50" cy="50" r="34" fill="none" stroke={cream} strokeWidth="5" />
+                <circle cx="50" cy="50" r="11" fill={cream} />
+                <circle cx="50" cy="50" r="4" fill={innerRing} />
+              </svg>
             </Box>
-          ))}
 
-          {/* Front of the chest: cherry body, cream bands and lock */}
-          <Box sx={{ position: 'absolute', left: 50, top: 118, width: 140, height: 84 }}>
-            <svg width="140" height="84" viewBox="0 0 140 84">
-              <rect x="0" y="0" width="140" height="84" rx="10" fill={fill} />
-              <rect x="28" y="0" width="8" height="84" fill={band} />
-              <rect x="104" y="0" width="8" height="84" fill={band} />
-              <rect x="0" y="0" width="140" height="7" fill={band} />
-              <rect x="58" y="12" width="24" height="28" rx="5" fill={band} />
-              <circle cx="70" cy="23" r="3.5" fill={inside} />
-              <rect x="68.5" y="24" width="3" height="9" rx="1.5" fill={inside} />
-              <path d="M8 16 V70" stroke={sky} strokeWidth="3" strokeLinecap="round" opacity="0.6" />
+            {/* Glint on the wheel's ring. Not inside the wheel, so it stays still while the wheel turns, like light would. */}
+            <svg width="100%" height="100%" viewBox="0 0 200 200" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+              <path d="M70.6 89.3 A31.3 31.3 0 0 1 89.3 70.6" stroke={sky} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.85" />
             </svg>
           </Box>
         </Box>
