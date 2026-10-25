@@ -5,13 +5,13 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { summarise } from '../lib/summary';
 
-function SummaryCards({ transactions, formatAmount }) {
+function SummaryCards({ transactions, periodPhrase, formatAmount }) {
   const { income, expense, balance } = summarise(transactions);
 
   const cards = [
-    { label: 'Income', value: income, color: 'income.main', icon: <ArrowUpwardIcon /> },
-    { label: 'Spent', value: expense, color: 'expense.main', icon: <ArrowDownwardIcon /> },
-    { label: 'Balance', value: balance, color: balance >= 0 ? 'income.main' : 'expense.main', icon: <AccountBalanceWalletIcon /> }
+    { label: `Income ${periodPhrase}`, value: income, color: 'income.main', icon: <ArrowUpwardIcon /> },
+    { label: `Spent ${periodPhrase}`, value: expense, color: 'expense.main', icon: <ArrowDownwardIcon /> },
+    { label: `Balance ${periodPhrase}`, value: balance, color: balance >= 0 ? 'income.main' : 'expense.main', icon: <AccountBalanceWalletIcon /> }
   ];
 
   return (

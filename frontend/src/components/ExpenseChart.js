@@ -2,7 +2,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, Typography, Box, useTheme } from '@mui/material';
 
-function ExpenseChart({ data = [], formatAmount }) {
+function ExpenseChart({ data = [], periodPhrase, formatAmount }) {
   // Recharts takes plain colour strings, not 'income.main' paths, so read them from the theme.
   const theme = useTheme();
   const COLORS = theme.palette.chart;
@@ -10,7 +10,7 @@ function ExpenseChart({ data = [], formatAmount }) {
   if (!data || data.length === 0) {
     return (
       <Card sx={{ p: 4, width: '100%', maxWidth: 500, textAlign: 'center' }}>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>Nothing spent yet.</Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary' }}>Nothing spent {periodPhrase}.</Typography>
       </Card>
     );
   }
@@ -21,7 +21,7 @@ function ExpenseChart({ data = [], formatAmount }) {
 
   return (
     <Card sx={{ p: 4, width: '100%', maxWidth: 550, background: 'background.paper', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 800, alignSelf: 'flex-start', color: 'primary.main' }}>Where it went</Typography>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 800, alignSelf: 'flex-start', color: 'primary.main' }}>Where it went {periodPhrase}</Typography>
       <Box sx={{ width: '100%', height: 320 }}>
         <ResponsiveContainer>
           <PieChart>

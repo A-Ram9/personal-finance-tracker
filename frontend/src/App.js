@@ -9,7 +9,7 @@ import IntelligencePanel from './components/IntelligencePanel'; // Intelligence 
 import FinGanPanel from './components/FinGanPanel'; // NEW: FinGan AI Layer Imported
 import Auth from './components/Auth';
 import useTransactions from './hooks/useTransactions';
-import { expensesByCategory } from './lib/summary';
+import { expensesByCategory, inMonth, inPeriod, periodMonth, PERIODS } from './lib/summary';
 import { formatMoney } from './lib/money';
 import { partOfDay } from './lib/dates';
 import { onUnauthorized } from './api';
@@ -19,14 +19,38 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const PERIOD_KEY = 'fintrack-period';
+// Menu label, and the phrase that finishes headings like "Spent this month".
+const PERIOD_TEXT = {
+  'this-month': { label: 'This month', phrase: 'this month' },
+  'last-month': { label: 'Last month', phrase: 'last month' },
+  'all-time': { label: 'All time', phrase: 'to date' },
+};
+
+// Storage can be blocked, so fall back to this month rather than crash.
+function loadPeriod() {
+  try {
+    const saved = localStorage.getItem(PERIOD_KEY);
+    return PERIODS.includes(saved) ? saved : 'this-month';
+  } catch {
+    return 'this-month';
+  }
+}
+
 function App({ toggleTheme, mode }) {
   const [user, setUser] = useState(localStorage.getItem('username') || null);
   const [currency, setCurrency] = useState('INR');
   const [rates, setRates] = useState({ INR: 1, USD: 0.012, NPR: 1.60, OMR: 0.0046 });
+  const [period, setPeriod] = useState(loadPeriod);
   // Hooks must run on every render, so this sits above the `if (!user)` return below.
   const { transactions, loading, error, addTransaction, updateTransaction, deleteTransaction } = useTransactions(user);
   // Derived, not stored: recalculated from `transactions` on every render.
-  const chartData = expensesByCategory(transactions);
+  // Filter once here; every dashboard panel below gets the same slice, so their numbers agree.
+  const now = new Date();
+  const periodTransactions = inPeriod(transactions, period, now);
+  const budgetTransactions = inMonth(transactions, periodMonth(period, now));
+  const chartData = expensesByCategory(periodTransactions);
+  const periodPhrase = PERIOD_TEXT[period].phrase;
 
   useEffect(() => {
     // Sync external currency indexes
@@ -44,6 +68,15 @@ function App({ toggleTheme, mode }) {
 
   // Amounts are stored in INR: convert to the chosen currency, then format for display.
   const formatAmount = (amountInINR) => formatMoney(amountInINR * (rates[currency] || 1), currency);
+
+  const choosePeriod = (next) => {
+    setPeriod(next);
+    try {
+      localStorage.setItem(PERIOD_KEY, next);
+    } catch {
+      // Not saved; the choice still applies for this visit.
+    }
+  };
 
   const logout = () => {
     // Only remove login data; clear() would also wipe the saved light/dark choice.
@@ -88,6 +121,13 @@ function App({ toggleTheme, mode }) {
               </Typography>
               <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, alignItems: 'center' }}>
                 <Select
+                  value={period} onChange={(e) => choosePeriod(e.target.value)} size="small"
+                  inputProps={{ 'aria-label': 'Period' }}
+                  sx={{ borderRadius: '12px', height: '40px', fontWeight: 700 }}
+                >
+                  {PERIODS.map(p => <MenuItem key={p} value={p}>{PERIOD_TEXT[p].label}</MenuItem>)}
+                </Select>
+                <Select
                   value={currency} onChange={(e) => setCurrency(e.target.value)} size="small"
                   sx={{ borderRadius: '12px', mx: 1, height: '40px', fontWeight: 700 }}
                 >
@@ -122,22 +162,22 @@ function App({ toggleTheme, mode }) {
                   formatAmount={formatAmount} />
               </Grid>
               <Grid item xs={12} md={5}>
-                <BudgetWidget transactions={transactions} formatAmount={formatAmount} />
+                <BudgetWidget transactions={periodTransactions} budgetTransactions={budgetTransactions} period={period} periodPhrase={periodPhrase} formatAmount={formatAmount} />
               </Grid>
               
               {/* Row 2: Metrics Summary Badges */}
               <Grid item xs={12}>
-                <SummaryCards transactions={transactions} formatAmount={formatAmount} />
+                <SummaryCards transactions={periodTransactions} periodPhrase={periodPhrase} formatAmount={formatAmount} />
               </Grid>
 
               {/* Row 3: Category Allocation Analysis Block */}
               <Grid item xs={12} display="flex" justifyContent="center">
-                <ExpenseChart data={chartData} formatAmount={formatAmount} />
+                <ExpenseChart data={chartData} periodPhrase={periodPhrase} formatAmount={formatAmount} />
               </Grid>
               
               {/* Row 4: Algorithmic Intelligence Trend Advisor Panel */}
               <Grid item xs={12}>
-                <IntelligencePanel transactions={transactions} formatAmount={formatAmount} />
+                <IntelligencePanel transactions={periodTransactions} allTransactions={transactions} periodPhrase={periodPhrase} formatAmount={formatAmount} />
               </Grid>
 
               {/* ======================================================= */}
