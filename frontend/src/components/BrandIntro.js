@@ -4,6 +4,7 @@ import { useTheme, darken } from '@mui/material/styles';
 import { motion, useAnimate, useReducedMotion } from 'framer-motion';
 
 // The door is drawn in a 200×200 box (centre 100,100) and scaled to its size on screen.
+const DOOR_VMIN = 0.6; // door diameter as a share of the screen's shorter side
 const RIM_RADIUS = 98; // door units
 const BOLT_COUNT = 12;
 const BOLT_OUT = 80; // distance from the centre, in door units
@@ -60,6 +61,11 @@ function fontsReady() {
   }
 }
 
+// True once the page is actually on screen: not being prerendered and not in a hidden tab.
+function pageIsVisible() {
+  return !document.prerendering && document.visibilityState === 'visible';
+}
+
 // The login card's size and position plus the window size, kept up to date as either changes.
 // Before the first measurement, a centred guess.
 function useLayout(targetRef) {
@@ -104,6 +110,7 @@ function BrandIntro({ onDone, targetRef }) {
 
   useEffect(() => {
     let finished = false;
+    let started = false;
     let controls = null;
 
     const finish = () => {
@@ -113,9 +120,22 @@ function BrandIntro({ onDone, targetRef }) {
       onDoneRef.current();
     };
 
-    // Reduced motion: the door stays closed and still; wait briefly for fonts, then App fades us out.
-    const played = reduceMotion ? wait(REDUCED_MIN_MS) : (controls = animate(SEQUENCE));
-    Promise.race([Promise.all([played, fontsReady()]), wait(MAX_WAIT_MS)]).then(finish);
+    // Chrome can prerender a page while you're still typing its address, and a background tab is hidden.
+    // Nothing starts (not the timeline, not the 3.5s cap) until the page is really on screen, so the
+    // intro can't play unseen and get marked as seen. App marks it seen only when onDone runs.
+    const start = () => {
+      if (started || finished || !pageIsVisible()) return;
+      started = true;
+      document.removeEventListener('visibilitychange', start);
+      document.removeEventListener('prerenderingchange', start);
+
+      // Reduced motion: the door stays closed and still; wait briefly for fonts, then App fades us out.
+      const played = reduceMotion ? wait(REDUCED_MIN_MS) : (controls = animate(SEQUENCE));
+      Promise.race([Promise.all([played, fontsReady()]), wait(MAX_WAIT_MS)]).then(finish);
+    };
+    document.addEventListener('visibilitychange', start);
+    document.addEventListener('prerenderingchange', start);
+    start();
 
     // Skipping is immediate and doesn't wait for fonts.
     window.addEventListener('pointerdown', finish);
@@ -123,6 +143,8 @@ function BrandIntro({ onDone, targetRef }) {
     return () => {
       finished = true;
       controls?.stop();
+      document.removeEventListener('visibilitychange', start);
+      document.removeEventListener('prerenderingchange', start);
       window.removeEventListener('pointerdown', finish);
       window.removeEventListener('keydown', finish);
     };
@@ -133,11 +155,10 @@ function BrandIntro({ onDone, targetRef }) {
   const sky = theme.palette.skyHighlight.main;
   const innerRing = darken(fill, 0.25);
 
-  // Centred on the login card, about 80vmin across, and always big enough that its rim clears the card's corners.
+  // Centred on the login card, so the doorway opens onto it. The wall covers the rest of the screen.
   const cx = layout.left + layout.width / 2;
   const cy = layout.top + layout.height / 2;
-  const cardCorner = Math.hypot(layout.width / 2, layout.height / 2);
-  const doorSize = Math.max(0.8 * Math.min(layout.vw, layout.vh), (2 * (cardCorner + 16)) / (RIM_RADIUS / 100));
+  const doorSize = DOOR_VMIN * Math.min(layout.vw, layout.vh);
   const doorwayRadius = (doorSize * RIM_RADIUS) / 200 - 1; // just inside the rim, so the closed door covers it completely
   const frameWidth = doorSize * 0.015;
   const circle = (size) => ({ position: 'absolute', left: cx - size / 2, top: cy - size / 2, width: size, height: size, borderRadius: '50%' });
