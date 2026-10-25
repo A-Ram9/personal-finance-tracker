@@ -29,3 +29,12 @@ Step 2 — theme: cream/cherry tokens, fonts, light mode by default (finishing p
 - Step 3 — copy: rewrite jargon into plain UI copy; spell the name "FinTrack" everywhere (login says "Fintrack")
 - Step 3b — MUI upgrade (5.10 doesn't support React 19; until then install with `npm install --legacy-peer-deps`)
 - Step 4 — layout, built on the upgraded MUI API
+
+## Voice
+FinTrack's voice is calm and quietly elegant, like a well-kept account book.
+- Plain words, short sentences, sentence case ("Add entry", not "ADD ENTRY").
+- No exclamation marks, emoji, hype or jargon.
+- Numbers lead; words support them.
+- Observe, never scold ("This week has been heavier than usual", not
+  "Consider freezing non-essentials").
+- The brand name is always "FinTrack".

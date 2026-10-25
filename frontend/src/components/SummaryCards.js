@@ -9,9 +9,9 @@ function SummaryCards({ transactions, formatAmount }) {
   const { income, expense, balance } = summarise(transactions);
 
   const cards = [
-    { label: 'Total Inflow', value: income, color: 'income.main', icon: <ArrowUpwardIcon /> },
-    { label: 'Total Outflow', value: expense, color: 'expense.main', icon: <ArrowDownwardIcon /> },
-    { label: 'Net Balance', value: balance, color: balance >= 0 ? 'income.main' : 'expense.main', icon: <AccountBalanceWalletIcon /> }
+    { label: 'Income', value: income, color: 'income.main', icon: <ArrowUpwardIcon /> },
+    { label: 'Spent', value: expense, color: 'expense.main', icon: <ArrowDownwardIcon /> },
+    { label: 'Balance', value: balance, color: balance >= 0 ? 'income.main' : 'expense.main', icon: <AccountBalanceWalletIcon /> }
   ];
 
   return (

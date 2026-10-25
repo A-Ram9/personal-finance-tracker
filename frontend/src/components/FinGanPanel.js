@@ -3,10 +3,11 @@ import { Card, Typography, TextField, Button, Box, Stack, Paper, CircularProgres
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SendIcon from '@mui/icons-material/Send';
 import api from '../api';
+import { partOfDay } from '../lib/dates';
 
 function FinGanPanel() {
-  const [messages, setMessages] = useState([
-    { sender: 'fingan', text: 'Salutations. I am FinGan, your private financial analytics core. How can I optimize your capital vector today?' }
+  const [messages, setMessages] = useState(() => [
+    { sender: 'fingan', text: `Good ${partOfDay()}. Ask me anything about your spending.` }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ function FinGanPanel() {
 
       setMessages(prev => [...prev, { sender: 'fingan', text: res.data.response }]);
     } catch (err) {
-      setMessages(prev => [...prev, { sender: 'fingan', text: 'FinGan core communication array connection timeout.' }]);
+      setMessages(prev => [...prev, { sender: 'fingan', text: "FinGan isn't available right now. Is Ollama running?" }]);
     } finally {
       setLoading(false);
     }
@@ -34,9 +35,10 @@ function FinGanPanel() {
     <Card sx={{ p: 4, background: 'background.paper', mt: 4, display: 'flex', flexDirection: 'column', height: '450px' }}>
       <Stack direction="row" alignItems="center" gap={1} mb={2}>
         <AutoAwesomeIcon sx={{ color: 'income.main' }} />
-        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          FinGan Core Intel (Premium Local AI)
-        </Typography>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>FinGan</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>Private assistant · runs on your computer</Typography>
+        </Box>
       </Stack>
 
       {/* Chat Space */}
@@ -59,7 +61,7 @@ function FinGanPanel() {
         {loading && (
           <Box sx={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 1 }}>
             <CircularProgress size={16} sx={{ color: 'income.main' }} />
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>Evaluating financial matrices...</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>Thinking…</Typography>
           </Box>
         )}
       </Box>
@@ -67,12 +69,12 @@ function FinGanPanel() {
       {/* Input Tray */}
       <Stack direction="row" gap={1}>
         <TextField
-          fullWidth size="small" variant="outlined" placeholder="Ask FinGan about your burn velocity or transaction metrics..."
+          fullWidth size="small" variant="outlined" placeholder="Ask about your spending…"
           value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
         />
-        <Button variant="contained" onClick={handleSend} sx={{ borderRadius: '12px', minWidth: '50px' }}>
+        <Button variant="contained" aria-label="Send" onClick={handleSend} sx={{ borderRadius: '12px', minWidth: '50px' }}>
           <SendIcon fontSize="small" />
         </Button>
       </Stack>

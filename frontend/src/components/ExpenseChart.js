@@ -10,7 +10,7 @@ function ExpenseChart({ data = [], formatAmount }) {
   if (!data || data.length === 0) {
     return (
       <Card sx={{ p: 4, width: '100%', maxWidth: 500, textAlign: 'center' }}>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>No distribution data found.</Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary' }}>Nothing spent yet.</Typography>
       </Card>
     );
   }
@@ -21,7 +21,7 @@ function ExpenseChart({ data = [], formatAmount }) {
 
   return (
     <Card sx={{ p: 4, width: '100%', maxWidth: 550, background: 'background.paper', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 800, alignSelf: 'flex-start', color: 'primary.main' }}>Category Allocation</Typography>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 800, alignSelf: 'flex-start', color: 'primary.main' }}>Where it went</Typography>
       <Box sx={{ width: '100%', height: 320 }}>
         <ResponsiveContainer>
           <PieChart>

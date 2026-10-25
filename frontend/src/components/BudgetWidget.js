@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Card, Typography, Box, Slider, LinearProgress, Stack } from '@mui/material';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
-import { summarise } from '../lib/summary';
+import { summarise, inMonth } from '../lib/summary';
 
 function BudgetWidget({ transactions, formatAmount }) {
   const [budgetLimit, setBudgetLimit] = useState(50000); // Base Default limits inside INR
 
+  // The savings rate stays all-time; the budget bar counts this calendar month only.
   const { income: totalInflow, expense: totalExpenses } = summarise(transactions);
+  const spentThisMonth = summarise(inMonth(transactions)).expense;
 
   // Compute metric ratios safely
-  const percentageUsed = Math.min((totalExpenses / budgetLimit) * 100, 100);
+  const percentageUsed = Math.min((spentThisMonth / budgetLimit) * 100, 100);
   const savingsRate = totalInflow > 0 ? Math.max(((totalInflow - totalExpenses) / totalInflow) * 100, 0) : 0;
 
   return (
@@ -17,15 +19,12 @@ function BudgetWidget({ transactions, formatAmount }) {
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrackChangesIcon /> Target Ceiling Budget
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-            BASE INR SETTING
+            <TrackChangesIcon /> Monthly budget
           </Typography>
         </Stack>
 
         <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-          Adjust Monthly Target Limit:
+          Budget
         </Typography>
         
         <Slider
@@ -38,9 +37,9 @@ function BudgetWidget({ transactions, formatAmount }) {
         />
 
         <Stack direction="row" justifyContent="space-between" mb={1}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>Ceiling Spent Rate:</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>Spent so far</Typography>
           <Typography variant="body2" sx={{ typography: 'amount', fontWeight: 700 }}>
-            {percentageUsed.toFixed(0)}% ({formatAmount(totalExpenses)} / {formatAmount(budgetLimit)})
+            {percentageUsed.toFixed(0)}% ({formatAmount(spentThisMonth)} / {formatAmount(budgetLimit)})
           </Typography>
         </Stack>
 
@@ -57,15 +56,8 @@ function BudgetWidget({ transactions, formatAmount }) {
       </Box>
 
       <Box sx={{ p: 2, borderRadius: '16px', backgroundColor: 'background.default', border: '1px solid', borderColor: 'border.main' }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 600 }}>Dynamic Net Savings Rate</Typography>
-            <Typography variant="h5" sx={{ typography: 'amount', fontWeight: 700, color: 'income.main' }}>{savingsRate.toFixed(1)}%</Typography>
-          </Box>
-          <Box sx={{ width: 50, height: 50, borderRadius: '50%', border: '4px solid', borderColor: 'softFill.main', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
-            ROI
-          </Box>
-        </Stack>
+        <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 600 }}>Savings rate</Typography>
+        <Typography variant="h5" sx={{ typography: 'amount', fontWeight: 700, color: 'income.main' }}>{savingsRate.toFixed(1)}%</Typography>
       </Box>
     </Card>
   );

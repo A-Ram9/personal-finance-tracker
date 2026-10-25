@@ -1,6 +1,33 @@
-import { summarise, expensesByCategory } from './summary';
+import { summarise, expensesByCategory, inMonth } from './summary';
 
-const tx = (type, category, amount) => ({ type, category, amount });
+const tx = (type, category, amount, date) => ({ type, category, amount, date });
+
+describe('inMonth', () => {
+  const oct22 = new Date(2026, 9, 22);
+  const list = [
+    tx('expense', 'Rent', 15000, '2026-10-01'),
+    tx('expense', 'Food', 800, '2026-10-31'),
+    tx('expense', 'Travel', 4000, '2026-09-30'),
+    tx('expense', 'Gift', 2000, '2025-10-15'),
+    tx('expense', 'Books', 500, '2026-11-01'),
+  ];
+
+  test('keeps only the given calendar month, first to last day', () => {
+    expect(inMonth(list, oct22).map(t => t.category)).toEqual(['Rent', 'Food']);
+  });
+
+  test('the same month in another year does not count', () => {
+    expect(inMonth(list, oct22).some(t => t.category === 'Gift')).toBe(false);
+  });
+
+  test('a month with no entries gives an empty list', () => {
+    expect(inMonth(list, new Date(2026, 0, 5))).toEqual([]);
+  });
+
+  test('works with summarise for this month\'s spending', () => {
+    expect(summarise(inMonth(list, oct22)).expense).toBe(15800);
+  });
+});
 
 describe('summarise', () => {
   test('an empty list gives all zeros', () => {

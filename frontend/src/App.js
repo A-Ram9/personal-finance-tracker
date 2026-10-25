@@ -11,6 +11,7 @@ import Auth from './components/Auth';
 import useTransactions from './hooks/useTransactions';
 import { expensesByCategory } from './lib/summary';
 import { formatMoney } from './lib/money';
+import { partOfDay } from './lib/dates';
 import { onUnauthorized } from './api';
 import { Container, Typography, Grid, Select, MenuItem, Box, IconButton, Alert } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -83,7 +84,7 @@ function App({ toggleTheme, mode }) {
                 </Typography>
               </Box>
               <Typography variant="h6" sx={{ textAlign: 'center', fontWeight: 700, flex: 2, color: 'text.primary' }}>
-                Welcome {user} ! Let's stay on track!
+                Good {partOfDay()}, {user}.
               </Typography>
               <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, alignItems: 'center' }}>
                 <Select
@@ -95,16 +96,16 @@ function App({ toggleTheme, mode }) {
                   <MenuItem value="NPR">NPR (₨)</MenuItem>
                   <MenuItem value="OMR">OMR (ر.ع.)</MenuItem>
                 </Select>
-                <IconButton onClick={toggleTheme} color="inherit">
+                <IconButton onClick={toggleTheme} color="inherit" aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
                   {mode === 'dark' ? <LightModeIcon sx={{ color: 'text.primary' }} /> : <DarkModeIcon sx={{ color: 'text.primary' }} />}
                 </IconButton>
-                <IconButton onClick={logout} color="error"><LogoutIcon /></IconButton>
+                <IconButton onClick={logout} color="error" aria-label="Sign out"><LogoutIcon /></IconButton>
               </Box>
             </Box>
 
             {error && (
               <Alert severity="error" sx={{ mb: 4 }}>
-                Couldn't load your transactions. Is the backend running?
+                Couldn't load your entries. Is the server running?
               </Alert>
             )}
 

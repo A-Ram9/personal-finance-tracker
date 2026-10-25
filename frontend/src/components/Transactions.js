@@ -3,6 +3,7 @@ import TransactionForm from './TransactionForm';
 import { Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Card, Typography, Box, Select, MenuItem, IconButton } from '@mui/material';
 import { Delete as DeleteOutlineIcon, Edit as EditNoteIcon, FileDownload as FileDownloadIcon } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatDate } from '../lib/dates';
 
 function Transactions({ transactions, onAdd, onUpdate, onDelete, formatAmount }) {
   const [editOpen, setEditOpen] = useState(false);
@@ -66,13 +67,13 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, formatAmount })
   // Native CSV Export Engine
   const exportToCSV = () => {
     if (filteredTransactions.length === 0) return;
-    const headers = ['ID', 'Date', 'Category', 'Amount (Base INR)', 'Type\n'];
+    const headers = ['ID', 'Date', 'Category', 'Amount (INR)', 'Type\n'];
     const rows = filteredTransactions.map(t => `${t.id},${t.date},"${t.category}",${t.amount},${t.type}`);
     const csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + rows.join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Fintrack_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `FinTrack_Export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -81,7 +82,7 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, formatAmount })
   return (
     <Card sx={{ p: 4, background: 'background.paper' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>Ledger Operations</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>Ledger</Typography>
         <Button 
           variant="outlined" 
           startIcon={<FileDownloadIcon />} 
@@ -97,18 +98,18 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, formatAmount })
 
       {/* Control Filters Widget Layer */}
       <Box sx={{ display: 'flex', gap: 2, mt: 4, mb: 3, flexWrap: 'wrap' }}>
-        <TextField label="Search Categories..." value={search} onChange={(e) => setSearch(e.target.value)} sx={{ flexGrow: 2, minWidth: '200px' }} />
+        <TextField label="Search" value={search} onChange={(e) => setSearch(e.target.value)} sx={{ flexGrow: 2, minWidth: '200px' }} />
         
         <Select value={filterType} onChange={(e) => setFilterType(e.target.value)} displayEmpty sx={{ flexGrow: 1, minWidth: '120px', borderRadius: '12px' }}>
-          <MenuItem value="">All Scopes</MenuItem>
-          <MenuItem value="income">Inflows</MenuItem>
-          <MenuItem value="expense">Outflows</MenuItem>
+          <MenuItem value="">All entries</MenuItem>
+          <MenuItem value="income">Income</MenuItem>
+          <MenuItem value="expense">Expenses</MenuItem>
         </Select>
 
         <Select value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)} sx={{ flexGrow: 1, minWidth: '120px', borderRadius: '12px' }}>
-          <MenuItem value="all">All Time</MenuItem>
-          <MenuItem value="week">Past 7 Days</MenuItem>
-          <MenuItem value="month">This Month</MenuItem>
+          <MenuItem value="all">All time</MenuItem>
+          <MenuItem value="week">Last 7 days</MenuItem>
+          <MenuItem value="month">This month</MenuItem>
         </Select>
       </Box>
 
@@ -116,6 +117,12 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, formatAmount })
 
       {/* Ledger Container with AnimatePresence Core */}
       <Box sx={{ maxHeight: '380px', overflowY: 'auto', pr: 1 }}>
+        {transactions.length === 0 && (
+          <Typography variant="body2" sx={{ color: 'text.secondary', py: 2 }}>No entries yet. Add your first one above.</Typography>
+        )}
+        {transactions.length > 0 && filteredTransactions.length === 0 && (
+          <Typography variant="body2" sx={{ color: 'text.secondary', py: 2 }}>Nothing matches these filters.</Typography>
+        )}
         <AnimatePresence initial={false}>
           {filteredTransactions.map(t => (
             <Box 
@@ -136,33 +143,36 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, formatAmount })
             >
               <Box>
                 <Typography variant="body1" sx={{ fontWeight: 700 }}>{t.category}</Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t.date}</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>{formatDate(t.date)}</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body1" sx={{ typography: 'amount', fontWeight: 700, mr: 2, color: t.type === 'income' ? 'income.main' : 'expense.main' }}>
                   {t.type === 'income' ? '+' : '-'}{formatAmount(t.amount)}
                 </Typography>
-                <IconButton size="small" onClick={() => openEdit(t)} sx={{ color: 'text.secondary' }}><EditNoteIcon /></IconButton>
-                <IconButton size="small" onClick={() => deleteTransaction(t.id)} sx={{ color: 'expense.main' }}><DeleteOutlineIcon /></IconButton>
+                <IconButton size="small" aria-label="Edit entry" onClick={() => openEdit(t)} sx={{ color: 'text.secondary' }}><EditNoteIcon /></IconButton>
+                <IconButton size="small" aria-label="Delete entry" onClick={() => deleteTransaction(t.id)} sx={{ color: 'expense.main' }}><DeleteOutlineIcon /></IconButton>
               </Box>
             </Box>
           ))}
         </AnimatePresence>
       </Box>
 
-      {/* Glass Dialog Modal */}
+      {/* Edit dialog */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} PaperProps={{ sx: { p: 3, borderRadius: '24px' } }}>
-        <DialogTitle sx={{ fontWeight: 800 }}>Modify History</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800 }}>Edit entry</DialogTitle>
         <DialogContent>
           <TextField margin="dense" type="date" name="date" value={editData?.date || ''} onChange={handleEditChange} fullWidth InputLabelProps={{ shrink: true }} />
           <TextField margin="dense" name="category" label="Category" value={editData?.category || ''} onChange={handleEditChange} fullWidth />
-          <TextField margin="dense" name="amount" label="Amount (Base INR)" type="number" value={editData?.amount || ''} onChange={handleEditChange} fullWidth />
-          <TextField margin="dense" name="type" label="Type (income/expense)" value={editData?.type || ''} onChange={handleEditChange} fullWidth />
+          <TextField margin="dense" name="amount" label="Amount (₹)" type="number" value={editData?.amount || ''} onChange={handleEditChange} fullWidth />
+          <TextField select margin="dense" name="type" label="Type" value={editData?.type || 'expense'} onChange={handleEditChange} fullWidth>
+            <MenuItem value="income">Income</MenuItem>
+            <MenuItem value="expense">Expense</MenuItem>
+          </TextField>
           {editError && <Typography variant="caption" color="error">{editError}</Typography>}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setEditOpen(false)} color="inherit">Cancel</Button>
-          <Button onClick={saveEdit} variant="contained" color="primary">Commit Alteration</Button>
+          <Button onClick={saveEdit} variant="contained" color="primary">Save changes</Button>
         </DialogActions>
       </Dialog>
     </Card>

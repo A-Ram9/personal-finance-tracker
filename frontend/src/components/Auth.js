@@ -3,7 +3,7 @@ import api from '../api';
 import { Box, TextField, Button, Typography, Card, ToggleButtonGroup, ToggleButton, Fade } from '@mui/material';
 
 const toggleSx = {
-  flex: 1, border: 'none', color: 'text.secondary',
+  flex: 1, border: 'none', color: 'text.secondary', textTransform: 'none',
   '&.Mui-selected, &.Mui-selected:hover': { borderRadius: '10px', backgroundColor: 'primaryFill.main', color: 'primaryFill.contrastText' }
 };
 
@@ -29,12 +29,14 @@ function Auth({ onAuthSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const usernameAutofill = useAutofillLabel();
   const passwordAutofill = useAutofillLabel();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setNotice('');
     const endpoint = isLogin ? 'login' : 'register';
     try {
       const res = await api.post(`/${endpoint}`, { username, password });
@@ -44,10 +46,10 @@ function Auth({ onAuthSuccess }) {
         onAuthSuccess(res.data.username);
       } else {
         setIsLogin(true);
-        alert('Registration complete! Please log in.');
+        setNotice('Account created. Please sign in.');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong');
+      setError(err.response?.data?.error || 'Something went wrong. Please try again.');
     }
   };
 
@@ -91,38 +93,39 @@ function Auth({ onAuthSuccess }) {
           p: 5, width: '100%', maxWidth: 420, zIndex: 2, textAlign: 'center'
         }}>
           <Typography variant="h4" sx={{ typography: 'wordmark', fontSize: '3.25rem', lineHeight: 1.2, color: 'primary.main', mb: 1 }}>
-            Fintrack
+            FinTrack
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
-            Manage assets intelligently
+            Your accounts, kept with care.
           </Typography>
 
           <ToggleButtonGroup
             value={isLogin}
             exclusive
-            onChange={(e, val) => val !== null && setIsLogin(val)}
+            onChange={(e, val) => { if (val !== null) { setIsLogin(val); setNotice(''); } }}
             sx={{ mb: 4, width: '100%', backgroundColor: 'background.default', borderRadius: '12px', p: 0.5 }}
           >
-            <ToggleButton value={true} sx={toggleSx}>Sign In</ToggleButton>
-            <ToggleButton value={false} sx={toggleSx}>Register</ToggleButton>
+            <ToggleButton value={true} sx={toggleSx}>Sign in</ToggleButton>
+            <ToggleButton value={false} sx={toggleSx}>Create account</ToggleButton>
           </ToggleButtonGroup>
 
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth variant="outlined" label="Username" value={username}
-              onChange={(e) => setUsername(e.target.value)} required
+              onChange={(e) => { setUsername(e.target.value); setNotice(''); }} required
               {...usernameAutofill} sx={{ mb: 2 }}
             />
             <TextField
               fullWidth variant="outlined" label="Password" type="password" value={password}
-              onChange={(e) => setPassword(e.target.value)} required
+              onChange={(e) => { setPassword(e.target.value); setNotice(''); }} required
               {...passwordAutofill} sx={{ mb: 3 }}
             />
 
             {error && <Typography variant="caption" sx={{ color: 'error.main', display: 'block', mb: 2 }}>{error}</Typography>}
+            {notice && <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 2 }}>{notice}</Typography>}
 
             <Button type="submit" variant="contained" fullWidth sx={{ py: 1.5 }}>
-              {isLogin ? 'Access Ledger' : 'Create Account'}
+              {isLogin ? 'Sign in' : 'Create account'}
             </Button>
           </form>
         </Card>
