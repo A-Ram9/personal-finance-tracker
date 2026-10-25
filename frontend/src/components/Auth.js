@@ -2,11 +2,35 @@ import React, { useState } from 'react';
 import api from '../api';
 import { Box, TextField, Button, Typography, Card, ToggleButtonGroup, ToggleButton, Fade } from '@mui/material';
 
+const toggleSx = {
+  flex: 1, border: 'none', color: 'text.secondary',
+  '&.Mui-selected, &.Mui-selected:hover': { borderRadius: '10px', backgroundColor: 'primaryFill.main', color: 'primaryFill.contrastText' }
+};
+
+// Chrome autofills before you touch the page but won't hand React the value until you do,
+// so the field looks empty to MUI and the label sits on top of the text. MUI's
+// :-webkit-autofill style starts a CSS animation called 'mui-auto-fill'; we listen for it
+// and lift the label ourselves ('mui-auto-fill-cancel' runs when the autofill goes away).
+function useAutofillLabel() {
+  const [autofilled, setAutofilled] = useState(false);
+  return {
+    inputProps: {
+      onAnimationStart: (e) => {
+        if (e.animationName === 'mui-auto-fill') setAutofilled(true);
+        if (e.animationName === 'mui-auto-fill-cancel') setAutofilled(false);
+      },
+    },
+    InputLabelProps: autofilled ? { shrink: true } : undefined,
+  };
+}
+
 function Auth({ onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const usernameAutofill = useAutofillLabel();
+  const passwordAutofill = useAutofillLabel();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,15 +59,17 @@ function Auth({ onAuthSuccess }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0A1128 0%, #101F42 100%)',
+      backgroundColor: 'background.default',
       overflow: 'hidden'
     }}>
       {/* Floating Currency Symbols Animation Overlay */}
       <Box sx={{
         position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1,
+        '@media (prefers-reduced-motion: reduce)': { display: 'none' },
         '& span': {
-          position: 'absolute', color: 'rgba(65, 105, 225, 0.15)', fontSize: '3rem', fontWeight: 'bold',
-          animation: 'floatAnimation 12s infinite linear'
+          position: 'absolute', color: 'softFill.main', fontSize: '3rem', fontWeight: 'bold',
+          // 'both' = use the first keyframe before the animation starts, so a symbol can never sit unanimated.
+          animation: 'floatAnimation 12s infinite linear both'
         },
         '@keyframes floatAnimation': {
           '0%': { transform: 'translateY(100vh) rotate(0deg)', opacity: 0 },
@@ -52,23 +78,22 @@ function Auth({ onAuthSuccess }) {
           '100%': { transform: 'translateY(-10vh) rotate(360deg)', opacity: 0 }
         }
       }}>
-        <span style={{ left: '10%', animationDelay: '0s', animationDuration: '14s' }}>₹</span>
-        <span style={{ left: '25%', animationDelay: '3s', animationDuration: '18s' }}>$</span>
-        <span style={{ left: '45%', animationDelay: '1s', animationDuration: '15s' }}>ر.ع.</span>
-        <span style={{ left: '65%', animationDelay: '5s', animationDuration: '12s' }}>£</span>
-        <span style={{ left: '85%', animationDelay: '2s', animationDuration: '20s' }}>₹</span>
+        {/* Negative delays start each symbol part-way through its flight, so the screen is populated on load. */}
+        <span style={{ left: '8%', animationDelay: '-2s', animationDuration: '14s' }}>₹</span>
+        <span style={{ left: '28%', animationDelay: '-11s', animationDuration: '18s' }}>$</span>
+        <span style={{ left: '47%', animationDelay: '-5s', animationDuration: '15s' }}>ر.ع.</span>
+        <span style={{ left: '68%', animationDelay: '-10s', animationDuration: '12s' }}>£</span>
+        <span style={{ left: '87%', animationDelay: '-10s', animationDuration: '20s' }}>₹</span>
       </Box>
 
       <Fade in={true} timeout={1000}>
         <Card sx={{
-          p: 5, width: '100%', maxWidth: 420, zIndex: 2, textAlign: 'center',
-          backgroundColor: 'rgba(255, 255, 255, 0.06)', backdropFilter: 'blur(25px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
+          p: 5, width: '100%', maxWidth: 420, zIndex: 2, textAlign: 'center'
         }}>
-          <Typography variant="h4" sx={{ color: '#FFFFFF', fontWeight: 900, mb: 1, letterSpacing: '-0.5px' }}>
+          <Typography variant="h4" sx={{ typography: 'wordmark', fontSize: '3.25rem', lineHeight: 1.2, color: 'primary.main', mb: 1 }}>
             Fintrack
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 4 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
             Manage assets intelligently
           </Typography>
 
@@ -76,30 +101,27 @@ function Auth({ onAuthSuccess }) {
             value={isLogin}
             exclusive
             onChange={(e, val) => val !== null && setIsLogin(val)}
-            sx={{ mb: 4, width: '100%', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', p: 0.5 }}
+            sx={{ mb: 4, width: '100%', backgroundColor: 'background.default', borderRadius: '12px', p: 0.5 }}
           >
-            <ToggleButton value={true} sx={{ flex: 1, color: '#FFF', '&.Mui-selected': { borderRadius: '10px', backgroundColor: '#4169E1', color: '#FFF' } }}>Sign In</ToggleButton>
-            <ToggleButton value={false} sx={{ flex: 1, color: '#FFF', '&.Mui-selected': { borderRadius: '10px', backgroundColor: '#4169E1', color: '#FFF' } }}>Register</ToggleButton>
+            <ToggleButton value={true} sx={toggleSx}>Sign In</ToggleButton>
+            <ToggleButton value={false} sx={toggleSx}>Register</ToggleButton>
           </ToggleButtonGroup>
 
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth variant="outlined" label="Username" value={username}
               onChange={(e) => setUsername(e.target.value)} required
-              sx={{ mb: 2, '& .MuiOutlinedInput-root': { color: '#FFF', '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&:hover fieldset': { borderColor: '#4169E1' } }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }}
+              {...usernameAutofill} sx={{ mb: 2 }}
             />
             <TextField
               fullWidth variant="outlined" label="Password" type="password" value={password}
               onChange={(e) => setPassword(e.target.value)} required
-              sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: '#FFF', '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&:hover fieldset': { borderColor: '#4169E1' } }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }}
+              {...passwordAutofill} sx={{ mb: 3 }}
             />
 
-            {error && <Typography variant="caption" sx={{ color: '#FF0844', display: 'block', mb: 2 }}>{error}</Typography>}
+            {error && <Typography variant="caption" sx={{ color: 'error.main', display: 'block', mb: 2 }}>{error}</Typography>}
 
-            <Button type="submit" variant="contained" fullWidth sx={{
-              background: 'linear-gradient(135deg, #4169E1 0%, #2A47A1 100%)',
-              boxShadow: '0 4px 20px rgba(65, 105, 225, 0.4)', color: '#FFF', py: 1.5
-            }}>
+            <Button type="submit" variant="contained" fullWidth sx={{ py: 1.5 }}>
               {isLogin ? 'Access Ledger' : 'Create Account'}
             </Button>
           </form>

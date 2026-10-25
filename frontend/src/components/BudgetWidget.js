@@ -3,7 +3,7 @@ import { Card, Typography, Box, Slider, LinearProgress, Stack } from '@mui/mater
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import { summarise } from '../lib/summary';
 
-function BudgetWidget({ transactions, convertAmount, currencySymbol }) {
+function BudgetWidget({ transactions, formatAmount }) {
   const [budgetLimit, setBudgetLimit] = useState(50000); // Base Default limits inside INR
 
   const { income: totalInflow, expense: totalExpenses } = summarise(transactions);
@@ -11,12 +11,6 @@ function BudgetWidget({ transactions, convertAmount, currencySymbol }) {
   // Compute metric ratios safely
   const percentageUsed = Math.min((totalExpenses / budgetLimit) * 100, 100);
   const savingsRate = totalInflow > 0 ? Math.max(((totalInflow - totalExpenses) / totalInflow) * 100, 0) : 0;
-
-  // Change indicator color if expenses run out of bounds
-  const getProgressBarColor = () => {
-    if (percentageUsed >= 90) return '#FFD700'; // Target theme alert accents
-    return '#4169E1';
-  };
 
   return (
     <Card sx={{ p: 4, background: 'background.paper', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -45,8 +39,8 @@ function BudgetWidget({ transactions, convertAmount, currencySymbol }) {
 
         <Stack direction="row" justifyContent="space-between" mb={1}>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>Ceiling Spent Rate:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 800 }}>
-            {percentageUsed.toFixed(0)}% ({currencySymbol}{convertAmount(totalExpenses)} / {currencySymbol}{convertAmount(budgetLimit)})
+          <Typography variant="body2" sx={{ typography: 'amount', fontWeight: 700 }}>
+            {percentageUsed.toFixed(0)}% ({formatAmount(totalExpenses)} / {formatAmount(budgetLimit)})
           </Typography>
         </Stack>
 
@@ -55,20 +49,20 @@ function BudgetWidget({ transactions, convertAmount, currencySymbol }) {
             variant="determinate" 
             value={percentageUsed} 
             sx={{
-              height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.05)',
-              '& .MuiLinearProgress-bar': { backgroundColor: getProgressBarColor(), borderRadius: 5 }
+              height: 10, borderRadius: 5, backgroundColor: 'border.main',
+              '& .MuiLinearProgress-bar': { backgroundColor: 'expense.main', borderRadius: 5 }
             }}
           />
         </Box>
       </Box>
 
-      <Box sx={{ p: 2, borderRadius: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <Box sx={{ p: 2, borderRadius: '16px', backgroundColor: 'background.default', border: '1px solid', borderColor: 'border.main' }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 600 }}>Dynamic Net Savings Rate</Typography>
-            <Typography variant="h5" sx={{ fontWeight: 900, color: 'secondary.main' }}>{savingsRate.toFixed(1)}%</Typography>
+            <Typography variant="h5" sx={{ typography: 'amount', fontWeight: 700, color: 'income.main' }}>{savingsRate.toFixed(1)}%</Typography>
           </Box>
-          <Box sx={{ width: 50, height: 50, borderRadius: '50%', border: `4px solid #FFD700`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
+          <Box sx={{ width: 50, height: 50, borderRadius: '50%', border: '4px solid', borderColor: 'softFill.main', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
             ROI
           </Box>
         </Stack>

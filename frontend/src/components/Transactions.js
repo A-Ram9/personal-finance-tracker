@@ -4,7 +4,7 @@ import { Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions, C
 import { Delete as DeleteOutlineIcon, Edit as EditNoteIcon, FileDownload as FileDownloadIcon } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function Transactions({ transactions, onAdd, onUpdate, onDelete, convertAmount, currencySymbol }) {
+function Transactions({ transactions, onAdd, onUpdate, onDelete, formatAmount }) {
   const [editOpen, setEditOpen] = useState(false);
   const [editError, setEditError] = useState('');
   const [deleteError, setDeleteError] = useState('');
@@ -87,7 +87,7 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, convertAmount, 
           startIcon={<FileDownloadIcon />} 
           onClick={exportToCSV}
           disabled={filteredTransactions.length === 0}
-          sx={{ borderRadius: '12px', border: '1px solid rgba(65, 105, 225, 0.3)' }}
+          sx={{ borderRadius: '12px', borderColor: 'border.main' }}
         >
           Export CSV
         </Button>
@@ -128,10 +128,10 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, convertAmount, 
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
               sx={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, mb: 2,
-                borderRadius: '16px', background: 'rgba(255, 255, 255, 0.02)',
-                borderLeft: `5px solid ${t.type === 'income' ? '#4169E1' : '#FFD700'}`,
+                borderRadius: '16px', backgroundColor: 'background.default',
+                borderLeft: '5px solid', borderLeftColor: t.type === 'income' ? 'income.main' : 'expense.main',
                 transition: 'box-shadow 0.3s ease',
-                '&:hover': { background: 'rgba(255,255,255,0.04)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }
+                '&:hover': { backgroundColor: 'background.paper', boxShadow: (theme) => theme.cardShadow }
               }}
             >
               <Box>
@@ -139,11 +139,11 @@ function Transactions({ transactions, onAdd, onUpdate, onDelete, convertAmount, 
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t.date}</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body1" sx={{ fontWeight: 800, mr: 2, color: t.type === 'income' ? '#4169E1' : '#FFD700' }}>
-                  {t.type === 'income' ? '+' : '-'}{currencySymbol}{convertAmount(t.amount)}
+                <Typography variant="body1" sx={{ typography: 'amount', fontWeight: 700, mr: 2, color: t.type === 'income' ? 'income.main' : 'expense.main' }}>
+                  {t.type === 'income' ? '+' : '-'}{formatAmount(t.amount)}
                 </Typography>
-                <IconButton size="small" onClick={() => openEdit(t)} sx={{ color: 'primary.main' }}><EditNoteIcon /></IconButton>
-                <IconButton size="small" onClick={() => deleteTransaction(t.id)} sx={{ color: 'secondary.main' }}><DeleteOutlineIcon /></IconButton>
+                <IconButton size="small" onClick={() => openEdit(t)} sx={{ color: 'text.secondary' }}><EditNoteIcon /></IconButton>
+                <IconButton size="small" onClick={() => deleteTransaction(t.id)} sx={{ color: 'expense.main' }}><DeleteOutlineIcon /></IconButton>
               </Box>
             </Box>
           ))}

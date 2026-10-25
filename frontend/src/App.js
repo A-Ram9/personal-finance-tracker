@@ -10,14 +10,13 @@ import FinGanPanel from './components/FinGanPanel'; // NEW: FinGan AI Layer Impo
 import Auth from './components/Auth';
 import useTransactions from './hooks/useTransactions';
 import { expensesByCategory } from './lib/summary';
+import { formatMoney } from './lib/money';
 import { onUnauthorized } from './api';
 import { Container, Typography, Grid, Select, MenuItem, Box, IconButton, Alert } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', NPR: '₨', OMR: 'ر.ع.' };
 
 function App({ toggleTheme, mode }) {
   const [user, setUser] = useState(localStorage.getItem('username') || null);
@@ -42,12 +41,13 @@ function App({ toggleTheme, mode }) {
     onUnauthorized(() => setUser(null));
   }, []);
 
-  const convertAmount = (amountInINR) => {
-    return (amountInINR * (rates[currency] || 1)).toFixed(2);
-  };
+  // Amounts are stored in INR: convert to the chosen currency, then format for display.
+  const formatAmount = (amountInINR) => formatMoney(amountInINR * (rates[currency] || 1), currency);
 
   const logout = () => {
-    localStorage.clear();
+    // Only remove login data; clear() would also wipe the saved light/dark choice.
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
     setUser(null);
   };
 
@@ -74,15 +74,15 @@ function App({ toggleTheme, mode }) {
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 p: 3, mb: 4, borderRadius: '24px', backgroundColor: 'background.paper',
-                backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.05)'
+                border: '1px solid', borderColor: 'border.main'
               }}
             >
-              <Box sx={{ flex: 1 }} />
-              <Typography variant="h6" sx={{
-                textAlign: 'center', fontWeight: 800, flex: 2,
-                background: mode === 'dark' ? 'linear-gradient(45deg, #FFF 30%, #FFD700 90%)' : 'linear-gradient(45deg, #4169E1 30%, #101F42 90%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-              }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ typography: 'wordmark', fontSize: '2.25rem', lineHeight: 1, color: 'primary.main' }}>
+                  FinTrack
+                </Typography>
+              </Box>
+              <Typography variant="h6" sx={{ textAlign: 'center', fontWeight: 700, flex: 2, color: 'text.primary' }}>
                 Welcome {user} ! Let's stay on track!
               </Typography>
               <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, alignItems: 'center' }}>
@@ -96,7 +96,7 @@ function App({ toggleTheme, mode }) {
                   <MenuItem value="OMR">OMR (ر.ع.)</MenuItem>
                 </Select>
                 <IconButton onClick={toggleTheme} color="inherit">
-                  {mode === 'dark' ? <LightModeIcon sx={{ color: '#FFD700' }} /> : <DarkModeIcon sx={{ color: '#4169E1' }} />}
+                  {mode === 'dark' ? <LightModeIcon sx={{ color: 'text.primary' }} /> : <DarkModeIcon sx={{ color: 'text.primary' }} />}
                 </IconButton>
                 <IconButton onClick={logout} color="error"><LogoutIcon /></IconButton>
               </Box>
@@ -118,25 +118,25 @@ function App({ toggleTheme, mode }) {
                   onAdd={addTransaction}
                   onUpdate={updateTransaction}
                   onDelete={deleteTransaction}
-                  convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+                  formatAmount={formatAmount} />
               </Grid>
               <Grid item xs={12} md={5}>
-                <BudgetWidget transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+                <BudgetWidget transactions={transactions} formatAmount={formatAmount} />
               </Grid>
               
               {/* Row 2: Metrics Summary Badges */}
               <Grid item xs={12}>
-                <SummaryCards transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+                <SummaryCards transactions={transactions} formatAmount={formatAmount} />
               </Grid>
 
               {/* Row 3: Category Allocation Analysis Block */}
               <Grid item xs={12} display="flex" justifyContent="center">
-                <ExpenseChart data={chartData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} mode={mode} />
+                <ExpenseChart data={chartData} formatAmount={formatAmount} />
               </Grid>
               
               {/* Row 4: Algorithmic Intelligence Trend Advisor Panel */}
               <Grid item xs={12}>
-                <IntelligencePanel transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+                <IntelligencePanel transactions={transactions} formatAmount={formatAmount} />
               </Grid>
 
               {/* ======================================================= */}

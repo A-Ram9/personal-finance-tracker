@@ -33,7 +33,7 @@ function FinGanPanel() {
   return (
     <Card sx={{ p: 4, background: 'background.paper', mt: 4, display: 'flex', flexDirection: 'column', height: '450px' }}>
       <Stack direction="row" alignItems="center" gap={1} mb={2}>
-        <AutoAwesomeIcon sx={{ color: '#00BFFF' }} />
+        <AutoAwesomeIcon sx={{ color: 'income.main' }} />
         <Typography variant="h6" sx={{ fontWeight: 800 }}>
           FinGan Core Intel (Premium Local AI)
         </Typography>
@@ -43,13 +43,14 @@ function FinGanPanel() {
       <Box sx={{ flexGrow: 1, overflowY: 'auto', mb: 2, display: 'flex', flexDirection: 'column', gap: 1.5, pr: 1 }}>
         {messages.map((msg, index) => (
           <Box key={index} sx={{ alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-            <Paper sx={{
-              p: 2,
+            <Paper elevation={0} sx={{
+              p: 2, boxShadow: (theme) => theme.cardShadow,
               borderRadius: msg.sender === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              backgroundColor: msg.sender === 'user' ? 'primary.main' : 'rgba(255,255,255,0.02)',
-              border: msg.sender === 'user' ? 'none' : '1px solid rgba(255,255,255,0.05)'
+              backgroundColor: msg.sender === 'user' ? 'primaryFill.main' : 'background.default',
+              border: msg.sender === 'user' ? 'none' : '1px solid',
+              borderColor: 'border.main'
             }}>
-              <Typography variant="body2" sx={{ color: 'text.primary', whiteSpace: 'pre-line' }}>
+              <Typography variant="body2" sx={{ color: msg.sender === 'user' ? 'primaryFill.contrastText' : 'text.primary', whiteSpace: 'pre-line' }}>
                 {msg.text}
               </Typography>
             </Paper>
@@ -57,7 +58,7 @@ function FinGanPanel() {
         ))}
         {loading && (
           <Box sx={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CircularProgress size={16} sx={{ color: '#00BFFF' }} />
+            <CircularProgress size={16} sx={{ color: 'income.main' }} />
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>Evaluating financial matrices...</Typography>
           </Box>
         )}

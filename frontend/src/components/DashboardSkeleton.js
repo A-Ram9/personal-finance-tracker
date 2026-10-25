@@ -2,14 +2,8 @@ import React from 'react';
 import { Grid, Box, Skeleton, Card, Stack } from '@mui/material';
 
 function DashboardSkeleton() {
-  // Common custom glassmorphic placeholder styling to match your theme
-  const skeletonStyles = {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: '12px',
-    '&::after': {
-      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent)',
-    },
-  };
+  // Colours come from MUI's Skeleton, which follows the theme's text colour in both modes.
+  const skeletonStyles = { borderRadius: '12px' };
 
   return (
     <Box sx={{ py: 4 }}>

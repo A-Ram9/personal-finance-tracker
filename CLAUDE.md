@@ -23,4 +23,9 @@ step by step to make it distinctive AND to learn the concepts properly.
 - Use plain, human UI copy. No jargon like "capital vector" or "velocity matrix".
 
 ## Current step
-Step 1 — one source of truth: useTransactions hook, pure summary functions, real loading state
+Step 2 — theme: cream/cherry tokens, fonts, light mode by default (finishing polish)
+
+## Step order
+- Step 3 — copy: rewrite jargon into plain UI copy; spell the name "FinTrack" everywhere (login says "Fintrack")
+- Step 3b — MUI upgrade (5.10 doesn't support React 19; until then install with `npm install --legacy-peer-deps`)
+- Step 4 — layout, built on the upgraded MUI API

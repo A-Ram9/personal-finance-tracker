@@ -5,13 +5,13 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { summarise } from '../lib/summary';
 
-function SummaryCards({ transactions, convertAmount, currencySymbol }) {
+function SummaryCards({ transactions, formatAmount }) {
   const { income, expense, balance } = summarise(transactions);
 
   const cards = [
-    { label: 'Total Inflow', value: income, color: '#4169E1', icon: <ArrowUpwardIcon /> },
-    { label: 'Total Outflow', value: expense, color: '#FFD700', icon: <ArrowDownwardIcon /> },
-    { label: 'Net Balance', value: balance, color: balance >= 0 ? '#4169E1' : '#FFD700', icon: <AccountBalanceWalletIcon /> }
+    { label: 'Total Inflow', value: income, color: 'income.main', icon: <ArrowUpwardIcon /> },
+    { label: 'Total Outflow', value: expense, color: 'expense.main', icon: <ArrowDownwardIcon /> },
+    { label: 'Net Balance', value: balance, color: balance >= 0 ? 'income.main' : 'expense.main', icon: <AccountBalanceWalletIcon /> }
   ];
 
   return (
@@ -22,11 +22,11 @@ function SummaryCards({ transactions, convertAmount, currencySymbol }) {
             <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 1 }}>{c.label}</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 900 }}>
-                  {currencySymbol} {convertAmount(c.value)}
+                <Typography variant="h4" sx={{ typography: 'amount', fontWeight: 700 }}>
+                  {formatAmount(c.value)}
                 </Typography>
               </Box>
-              <Box sx={{ p: 1.5, borderRadius: '16px', backgroundColor: 'rgba(255,255,255,0.05)', color: c.color }}>
+              <Box sx={{ p: 1.5, borderRadius: '16px', backgroundColor: 'background.default', color: c.color }}>
                 {c.icon}
               </Box>
             </CardContent>
